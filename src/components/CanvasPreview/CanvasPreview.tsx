@@ -63,6 +63,7 @@ export const CanvasPreview = () => {
         onAddScreenshot={addScreenshot}
         screenshotCount={screenshots.length}
         canCenterSelectedElement={canCenterSelectedElement}
+        hasSelectedElement={selectedElement !== null}
         onCenterSelectedElement={centerSelectedElementHorizontally}
       />
 

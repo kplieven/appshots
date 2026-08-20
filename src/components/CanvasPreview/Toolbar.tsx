@@ -13,6 +13,8 @@ interface ToolbarProps {
   screenshotCount: number;
   /** Whether the selected element can be centered */
   canCenterSelectedElement: boolean;
+  /** Whether an element is selected, and so can be nudged with the arrow keys */
+  hasSelectedElement: boolean;
   /** Callback to horizontally center the selected element */
   onCenterSelectedElement: () => void;
 }
@@ -26,6 +28,7 @@ interface ToolbarProps {
  * @param props.onAddScreenshot - Handler for adding new screenshot
  * @param props.screenshotCount - Current number of screenshots
  * @param props.canCenterSelectedElement - Whether an element is selected and centerable
+ * @param props.hasSelectedElement - Whether an element is selected
  * @param props.onCenterSelectedElement - Handler for centering the selected element
  *
  * @example
@@ -33,6 +36,7 @@ interface ToolbarProps {
  *   onAddScreenshot={addScreenshot}
  *   screenshotCount={3}
  *   canCenterSelectedElement={true}
+ *   hasSelectedElement={true}
  *   onCenterSelectedElement={centerSelectedElementHorizontally}
  * />
  */
@@ -40,6 +44,7 @@ export const Toolbar = ({
   onAddScreenshot,
   screenshotCount,
   canCenterSelectedElement,
+  hasSelectedElement,
   onCenterSelectedElement,
 }: ToolbarProps) => (
   <div className="h-14 border-b border-white/10 bg-[#141414] flex items-center px-4 gap-4">
@@ -64,6 +69,11 @@ export const Toolbar = ({
       </button>
     </div>
     <div className="flex-1" />
+    {hasSelectedElement && (
+      <span className="text-xs text-gray-500">
+        Arrow keys nudge &middot; Shift for larger steps
+      </span>
+    )}
     <span className="text-xs text-gray-400">
       {screenshotCount} screenshot{screenshotCount !== 1 ? "s" : ""}
     </span>

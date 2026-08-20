@@ -24,6 +24,13 @@ import { getHorizontalCenterUpdates } from "../lib/center-element";
 import { resolveTextColors } from "../lib/text-colors";
 import { moveItem } from "../lib/reorder";
 import {
+  NUDGE_COARSE_MULTIPLIER,
+  NUDGE_DIRECTIONS,
+  NUDGE_STEP_PERCENT,
+  getNudgeUpdates,
+  isTextEntryTarget,
+} from "../lib/nudge-element";
+import {
   collectTextCenterYTargets,
   findSnapCenterY,
 } from "../lib/snap-alignment";
@@ -120,6 +127,7 @@ interface EditorContextType {
   handleElementMouseUp: () => void;
   canCenterSelectedElement: boolean;
   centerSelectedElementHorizontally: () => void;
+  nudgeSelectedElement: (dx: number, dy: number) => void;
   addOverlayImage: (file: File) => void;
   removeOverlayImage: (imageId: string) => void;
   updateOverlayImageSize: (imageId: string, widthPercent: number) => void;
@@ -869,6 +877,56 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
     updateScreenshotById(selectedElement.screenshotId, updates);
   };
 
+  /**
+   * Moves the selected element by a step, in percent of the screenshot.
+   *
+   * @param dx - Horizontal distance, in percent of the screenshot width
+   * @param dy - Vertical distance, in percent of the screenshot height
+   */
+  const nudgeSelectedElement = useCallback(
+    (dx: number, dy: number) => {
+      if (!selectedElement || !selectedElementScreenshot) return;
+
+      const updates = getNudgeUpdates(
+        selectedElementScreenshot,
+        selectedElement,
+        dx,
+        dy,
+      );
+      if (!updates) return;
+
+      updateScreenshotById(selectedElement.screenshotId, updates);
+    },
+    [selectedElement, selectedElementScreenshot, updateScreenshotById],
+  );
+
+  // Arrow keys nudge the selected element, Shift makes the step coarser
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const direction = NUDGE_DIRECTIONS[e.key];
+      if (!direction) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (!selectedElement) return;
+      if (isFontPickerOpen || isStarModalOpen) return;
+      if (isTextEntryTarget(e.target)) return;
+
+      // The arrow key belongs to the element now, not to the scroll container
+      e.preventDefault();
+
+      const step =
+        NUDGE_STEP_PERCENT * (e.shiftKey ? NUDGE_COARSE_MULTIPLIER : 1);
+      nudgeSelectedElement(direction.dx * step, direction.dy * step);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    isFontPickerOpen,
+    isStarModalOpen,
+    nudgeSelectedElement,
+    selectedElement,
+  ]);
+
   const addOverlayImage = (file: File) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -1255,6 +1313,7 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         handleElementMouseUp,
         canCenterSelectedElement,
         centerSelectedElementHorizontally,
+        nudgeSelectedElement,
         addOverlayImage,
         removeOverlayImage,
         updateOverlayImageSize,
