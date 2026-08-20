@@ -32,16 +32,60 @@ export interface RenderOptions {
 }
 
 /**
+ * Block-level tags that start and end a visual line, mirroring how the browser
+ * lays them out in the preview.
+ */
+const BLOCK_ELEMENTS = new Set([
+  "address",
+  "article",
+  "aside",
+  "blockquote",
+  "dd",
+  "div",
+  "dl",
+  "dt",
+  "figcaption",
+  "figure",
+  "footer",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "header",
+  "hr",
+  "li",
+  "main",
+  "nav",
+  "ol",
+  "p",
+  "pre",
+  "section",
+  "table",
+  "tbody",
+  "td",
+  "tfoot",
+  "th",
+  "thead",
+  "tr",
+  "ul",
+]);
+
+/**
  * Parse HTML string into styled segments
+ *
+ * Line breaks are preserved the way the preview renders them: `<br>` always
+ * breaks, block elements start and end a line, and literal newlines inside text
+ * break too (the preview uses `white-space: pre-wrap`). Breaks are emitted as
+ * standalone `"\n"` segments.
  */
 export function parseRichText(html: string, defaultColor: string): StyledSegment[] {
-  const segments: StyledSegment[] = [];
-  
   // Create a temporary DOM element to parse HTML
   const parser = new DOMParser();
   const doc = parser.parseFromString(`<div>${html}</div>`, "text/html");
   const root = doc.body.firstChild;
-  
+
   if (!root) {
     return [
       {
@@ -63,27 +107,63 @@ export function parseRichText(html: string, defaultColor: string): StyledSegment
     backgroundColor: string | null;
   }
 
+  // Segments are collected per visual line so block boundaries can be resolved
+  // the same way a browser does.
+  const lines: StyledSegment[][] = [[]];
+  const currentLine = () => lines[lines.length - 1];
+
+  /** Unconditional break, as produced by `<br>` or a literal newline. */
+  const breakLine = () => {
+    lines.push([]);
+  };
+
+  /** Block boundary: only breaks when the current line already has content. */
+  const closeLine = () => {
+    if (currentLine().length > 0) {
+      breakLine();
+    }
+  };
+
+  const pushText = (text: string, state: StyleState) => {
+    currentLine().push({
+      text,
+      bold: state.bold,
+      italic: state.italic,
+      underline: state.underline,
+      color: state.color,
+      backgroundColor: state.backgroundColor,
+    });
+  };
+
   // Recursively walk the DOM tree
   function walkNode(node: Node, state: StyleState) {
     if (node.nodeType === Node.TEXT_NODE) {
       const text = node.textContent || "";
-      if (text) {
-        segments.push({
-          text,
-          bold: state.bold,
-          italic: state.italic,
-          underline: state.underline,
-          color: state.color,
-          backgroundColor: state.backgroundColor,
-        });
+      if (!text) {
+        return;
       }
+
+      const parts = text.split(/\r\n|\r|\n/);
+      parts.forEach((part, index) => {
+        if (index > 0) {
+          breakLine();
+        }
+        if (part) {
+          pushText(part, state);
+        }
+      });
       return;
     }
 
     if (node.nodeType === Node.ELEMENT_NODE) {
       const element = node as HTMLElement;
       const tagName = element.tagName.toLowerCase();
-      
+
+      if (tagName === "br") {
+        breakLine();
+        return;
+      }
+
       // Clone state for children
       const childState: StyleState = { ...state };
 
@@ -131,21 +211,20 @@ export function parseRichText(html: string, defaultColor: string): StyledSegment
             childState.backgroundColor = style.backgroundColor;
           }
           break;
-        case "br":
-          segments.push({
-            text: "\n",
-            bold: state.bold,
-            italic: state.italic,
-            underline: state.underline,
-            color: state.color,
-            backgroundColor: state.backgroundColor,
-          });
-          return;
+      }
+
+      const isBlock = BLOCK_ELEMENTS.has(tagName);
+      if (isBlock) {
+        closeLine();
       }
 
       // Process children
       for (const child of Array.from(node.childNodes)) {
         walkNode(child, childState);
+      }
+
+      if (isBlock) {
+        closeLine();
       }
     }
   }
@@ -156,6 +235,27 @@ export function parseRichText(html: string, defaultColor: string): StyledSegment
     underline: false,
     color: defaultColor,
     backgroundColor: null,
+  });
+
+  // A break that closes the last block (or a trailing `<br>`) adds no visible
+  // line in the preview, so drop one trailing empty line.
+  if (lines.length > 1 && currentLine().length === 0) {
+    lines.pop();
+  }
+
+  const segments: StyledSegment[] = [];
+  lines.forEach((line, index) => {
+    if (index > 0) {
+      segments.push({
+        text: "\n",
+        bold: false,
+        italic: false,
+        underline: false,
+        color: defaultColor,
+        backgroundColor: null,
+      });
+    }
+    segments.push(...line);
   });
 
   return segments;
