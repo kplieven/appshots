@@ -96,6 +96,11 @@ export const googleFonts: FontConfig[] = [
     weights: ["400", "500", "700"],
   },
   {
+    family: "Figtree",
+    category: "sans-serif",
+    weights: ["400", "500", "600", "700", "800", "900"],
+  },
+  {
     family: "Quicksand",
     category: "sans-serif",
     weights: ["400", "500", "600", "700"],
