@@ -21,6 +21,7 @@ import type {
 import { devices, exportSizes, gradientPresets } from "../constants";
 import { exportScreenshots } from "../lib/export-utils";
 import { getHorizontalCenterUpdates } from "../lib/center-element";
+import { resolveTextColors } from "../lib/text-colors";
 import {
   collectTextCenterYTargets,
   findSnapCenterY,
@@ -144,6 +145,8 @@ interface EditorContextType {
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
 type LegacyScreenshotFields = {
+  /** Single colour used for both texts before they could be coloured apart */
+  textColor?: string;
   screenshotSrc?: string | null;
   deviceScale?: number;
   deviceOffsetY?: number;
@@ -181,7 +184,8 @@ const createDefaultScreenshot = (
     gradientType: "linear",
     gradientAngle: 180,
     backgroundNoise: 0,
-    textColor: "#ffffff",
+    headlineColor: "#ffffff",
+    subheadlineColor: "#ffffff",
     headlineX: 50,
     headlineY: 10,
     headlineWidth: 80,
@@ -201,6 +205,7 @@ const normalizeScreenshot = (
   fallbackColorId: string,
 ): Screenshot => {
   const {
+    textColor: _legacyTextColor,
     screenshotSrc: _legacyScreenshotSrc,
     deviceScale: _legacyDeviceScale,
     deviceOffsetY: _legacyDeviceOffsetY,
@@ -221,6 +226,8 @@ const normalizeScreenshot = (
   return {
     ...baseScreenshot,
     ...rest,
+    // Pre-split screenshots only carry textColor; it seeds both colours
+    ...resolveTextColors(screenshot, baseScreenshot.headlineColor),
     overlayImages: screenshot.overlayImages ?? [],
     devices: deviceInstances,
     activeDeviceId,
@@ -638,7 +645,8 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
       gradientType: activeScreenshot.gradientType,
       gradientAngle: activeScreenshot.gradientAngle,
       backgroundNoise: activeScreenshot.backgroundNoise,
-      textColor: activeScreenshot.textColor,
+      headlineColor: activeScreenshot.headlineColor,
+      subheadlineColor: activeScreenshot.subheadlineColor,
       headlineX: 50,
       headlineY: 10,
       headlineWidth: 80,

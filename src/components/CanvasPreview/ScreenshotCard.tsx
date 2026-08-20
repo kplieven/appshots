@@ -164,7 +164,7 @@ export const ScreenshotCard = ({
           y={screenshot.headlineY}
           width={screenshot.headlineWidth}
           fontSize={headlineFontSize / 3}
-          color={screenshot.textColor}
+          color={screenshot.headlineColor}
           fontFamily={screenshot.fontFamily}
           isSelected={
             isActive &&
@@ -182,7 +182,7 @@ export const ScreenshotCard = ({
           y={screenshot.subheadlineY}
           width={screenshot.subheadlineWidth}
           fontSize={subheadlineFontSize / 3}
-          color={screenshot.textColor}
+          color={screenshot.subheadlineColor}
           fontFamily={screenshot.fontFamily}
           isSelected={
             isActive &&

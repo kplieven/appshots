@@ -92,7 +92,10 @@ export type Screenshot = {
   gradientType: "linear" | "radial";
   gradientAngle: number;
   backgroundNoise: number;
-  textColor: string;
+  /** Colour of the headline text */
+  headlineColor: string;
+  /** Colour of the subheadline text */
+  subheadlineColor: string;
   headlineX: number;
   headlineY: number;
   headlineWidth: number;

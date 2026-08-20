@@ -1,7 +1,7 @@
 /**
  * AppearanceSection Component
  *
- * Visual appearance controls including background, text color, font, and screenshot image.
+ * Visual appearance controls including background, text colors, font, and screenshot image.
  */
 
 import { ChevronDown } from "lucide-react";
@@ -25,7 +25,7 @@ interface AppearanceSectionProps {
 /**
  * AppearanceSection - Visual appearance controls
  *
- * Background, text color, font, and screenshot image settings.
+ * Background, headline and subheadline colors, font, and screenshot image settings.
  *
  * @param props - Component props
  */
@@ -44,12 +44,25 @@ export const AppearanceSection = ({
         onUpdateScreenshot={onUpdateScreenshot}
       />
 
-      {/* Text Color */}
+      {/* Headline Color */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1">Text Color</label>
+        <label className="block text-xs text-gray-400 mb-1">
+          Headline Color
+        </label>
         <HexColorInput
-          value={screenshot.textColor}
-          onChange={(color) => onUpdateScreenshot({ textColor: color })}
+          value={screenshot.headlineColor}
+          onChange={(color) => onUpdateScreenshot({ headlineColor: color })}
+        />
+      </div>
+
+      {/* Subheadline Color */}
+      <div>
+        <label className="block text-xs text-gray-400 mb-1">
+          Subheadline Color
+        </label>
+        <HexColorInput
+          value={screenshot.subheadlineColor}
+          onChange={(color) => onUpdateScreenshot({ subheadlineColor: color })}
         />
       </div>
 
