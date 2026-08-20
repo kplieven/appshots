@@ -33,6 +33,49 @@ describe("parseRichText", () => {
 
     expect(segment.backgroundColor).toBe("yellow");
   });
+
+  const textOf = (html: string) =>
+    parseRichText(html, "#ffffff")
+      .map((segment) => segment.text)
+      .join("");
+
+  it("breaks lines on br elements", () => {
+    expect(textOf("First<br>Second")).toBe("First\nSecond");
+  });
+
+  it("breaks lines on block elements produced by contenteditable", () => {
+    expect(textOf("First<div>Second</div><div>Third</div>")).toBe(
+      "First\nSecond\nThird",
+    );
+    expect(textOf("<div>First</div><div>Second</div>")).toBe("First\nSecond");
+    expect(textOf("<p>First</p><p>Second</p>")).toBe("First\nSecond");
+  });
+
+  it("keeps blank lines created by empty blocks", () => {
+    expect(textOf("First<div><br></div><div>Third</div>")).toBe(
+      "First\n\nThird",
+    );
+  });
+
+  it("ignores the trailing break that closes the last block", () => {
+    expect(textOf("<div>Only</div>")).toBe("Only");
+    expect(textOf("Only<br>")).toBe("Only");
+    expect(textOf("<div>Only<br></div>")).toBe("Only");
+  });
+
+  it("breaks on literal newlines in text, matching the pre-wrap preview", () => {
+    expect(textOf("First\nSecond")).toBe("First\nSecond");
+  });
+
+  it("keeps styling across block boundaries", () => {
+    const segments = parseRichText("<div><b>Bold</b></div><div>Plain</div>", "#ffffff");
+
+    expect(segments.map((segment) => [segment.text, segment.bold])).toEqual([
+      ["Bold", true],
+      ["\n", false],
+      ["Plain", false],
+    ]);
+  });
 });
 
 describe("renderRichText", () => {
