@@ -40,6 +40,7 @@ export const CanvasPreview = () => {
     previewRef,
     canvasContainerRef,
     selectedElement,
+    snapGuideY,
     headlineFontSize,
     subheadlineFontSize,
     setPreviewDimensions,
@@ -84,6 +85,7 @@ export const CanvasPreview = () => {
                 isActive={activeScreenshotId === screenshot.id}
                 canRemove={screenshots.length > 1}
                 selectedElement={selectedElement}
+                snapGuideY={snapGuideY}
                 exportSize={exportSize}
                 headlineFontSize={headlineFontSize}
                 subheadlineFontSize={subheadlineFontSize}

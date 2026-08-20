@@ -81,6 +81,8 @@ interface EditorContextType {
   selectedElement: SelectedElement | null;
   setSelectedElement: (element: SelectedElement | null) => void;
   isDragging: boolean;
+  /** Height the dragged element is snapped to, in percent, or null when not snapping */
+  snapGuideY: number | null;
   headlineFontSize: number;
   setHeadlineFontSize: (size: number) => void;
   subheadlineFontSize: number;
@@ -347,6 +349,9 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
   const snapCenterYTargets = useRef<number[]>([]);
   /** Height of the dragged text element, in percent of the screenshot height. */
   const dragElementHeightPercent = useRef(0);
+  /** Height the current drag is snapped to, in percent, or null when not snapping. */
+  const [snapGuideY, setSnapGuideY] = useState<number | null>(null);
+  const pendingSnapGuideY = useRef<number | null>(null);
 
   const overlayImageInputRef = useRef<HTMLInputElement>(null);
 
@@ -723,6 +728,8 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const applyDragUpdate = useCallback(() => {
+    setSnapGuideY(pendingSnapGuideY.current);
+
     if (!pendingUpdate.current || !selectedElement) return;
 
     const { x: newX, y: newY } = pendingUpdate.current;
@@ -781,6 +788,7 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
       let newY = dragStartElementPos.current.y + deltaY;
 
       // Hold Alt to drag freely past the alignment guides
+      pendingSnapGuideY.current = null;
       if (!e.altKey && snapCenterYTargets.current.length > 0) {
         const halfHeight = dragElementHeightPercent.current / 2;
         const snappedCenterY = findSnapCenterY(
@@ -789,6 +797,7 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         );
         if (snappedCenterY !== null) {
           newY = snappedCenterY - halfHeight;
+          pendingSnapGuideY.current = snappedCenterY;
         }
       }
 
@@ -803,6 +812,8 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
 
   const handleElementMouseUp = useCallback(() => {
     setIsDragging(false);
+    pendingSnapGuideY.current = null;
+    setSnapGuideY(null);
     if (rafId.current !== null) {
       cancelAnimationFrame(rafId.current);
       rafId.current = null;
@@ -1192,6 +1203,7 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         selectedElement,
         setSelectedElement,
         isDragging,
+        snapGuideY,
         headlineFontSize,
         setHeadlineFontSize,
         subheadlineFontSize,

@@ -11,6 +11,7 @@ import { RemoveButton } from "./RemoveButton";
 import { OverlayImage } from "./OverlayImage";
 import { TextElement } from "./TextElement";
 import { DeviceContainer } from "./DeviceContainer";
+import { SnapGuide } from "./SnapGuide";
 import { isElementSelected } from "./utils";
 import { Z_INDEX } from "./constants";
 
@@ -25,6 +26,8 @@ interface ScreenshotCardProps {
   canRemove: boolean;
   /** Currently selected element */
   selectedElement: SelectedElement | null;
+  /** Height of the alignment guide to draw, in percent, or null when not snapping */
+  snapGuideY: number | null;
   /** Export size for aspect ratio */
   exportSize: ExportSize;
   /** Headline font size in pixels */
@@ -66,6 +69,7 @@ export const ScreenshotCard = ({
   isActive,
   canRemove,
   selectedElement,
+  snapGuideY,
   exportSize,
   headlineFontSize,
   subheadlineFontSize,
@@ -127,6 +131,9 @@ export const ScreenshotCard = ({
 
       {/* Remove button */}
       {canRemove && <RemoveButton onRemove={onRemove} />}
+
+      {/* Alignment guide shown while a text element snaps */}
+      {snapGuideY !== null && <SnapGuide y={snapGuideY} />}
 
       {/* Content layer */}
       <div className="absolute inset-0 select-none">

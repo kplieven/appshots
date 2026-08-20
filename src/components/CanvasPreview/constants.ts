@@ -16,6 +16,8 @@ export const Z_INDEX = {
   text: 60,
   /** Overlay images in front of device */
   frontDevice: 100,
+  /** Alignment guide shown while snapping */
+  snapGuide: 200,
 } as const;
 
 /**
@@ -27,3 +29,8 @@ export const SELECTION_COLORS = {
   shadow: "rgba(139, 92, 246, 0.4)",
   imageOutline: "rgba(255, 255, 255, 0.8)",
 } as const;
+
+/**
+ * Colour of the alignment guide shown while a text element snaps
+ */
+export const SNAP_GUIDE_COLOR = "rgba(139, 92, 246, 0.9)";
