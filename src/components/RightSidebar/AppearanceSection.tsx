@@ -4,7 +4,7 @@
  * Visual appearance controls including background, text colors, font, and screenshot image.
  */
 
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Copy } from "lucide-react";
 import type { Screenshot, GradientPreset } from "../../types";
 import { SidebarSection } from "./SidebarSection";
 import { BackgroundPicker } from "./BackgroundPicker";
@@ -20,6 +20,10 @@ interface AppearanceSectionProps {
   onUpdateScreenshot: (updates: Partial<Screenshot>) => void;
   /** Open font picker handler */
   onOpenFontPicker: () => void;
+  /** Whether there is another screenshot to copy this appearance to */
+  canCopyToAll: boolean;
+  /** Copy this appearance to every other screenshot */
+  onCopyToAll: () => void;
 }
 
 /**
@@ -34,6 +38,8 @@ export const AppearanceSection = ({
   gradientPresets,
   onUpdateScreenshot,
   onOpenFontPicker,
+  canCopyToAll,
+  onCopyToAll,
 }: AppearanceSectionProps) => (
   <SidebarSection title="Appearance">
     <div className="space-y-4">
@@ -76,6 +82,17 @@ export const AppearanceSection = ({
           <ChevronDown size={16} className="text-gray-400" />
         </button>
       </div>
+
+      {/* Share this appearance with the rest of the set */}
+      <button
+        onClick={onCopyToAll}
+        disabled={!canCopyToAll}
+        title="Copy background, text colors and font to every other screenshot"
+        className="w-full flex items-center justify-center gap-1.5 bg-white/10 hover:bg-white/20 disabled:opacity-40 disabled:hover:bg-white/10 disabled:cursor-not-allowed text-white text-xs font-medium px-3 py-2 rounded-md transition-colors"
+      >
+        <Copy size={14} />
+        Copy to all other screenshots
+      </button>
     </div>
   </SidebarSection>
 );

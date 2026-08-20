@@ -23,6 +23,7 @@ import { exportScreenshots } from "../lib/export-utils";
 import { getHorizontalCenterUpdates } from "../lib/center-element";
 import { resolveTextColors } from "../lib/text-colors";
 import { moveItem } from "../lib/reorder";
+import { copyAppearanceToAll } from "../lib/appearance";
 import {
   NUDGE_COARSE_MULTIPLIER,
   NUDGE_DIRECTIONS,
@@ -125,6 +126,8 @@ interface EditorContextType {
   ) => void;
   handleElementMouseMove: (e: MouseEvent) => void;
   handleElementMouseUp: () => void;
+  copyAppearanceToAllScreenshots: () => void;
+  canCopyAppearanceToAllScreenshots: boolean;
   canCenterSelectedElement: boolean;
   centerSelectedElementHorizontally: () => void;
   nudgeSelectedElement: (dx: number, dy: number) => void;
@@ -1173,6 +1176,17 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
    * @param id - Screenshot being moved
    * @param targetIndex - Position it should end up at; out-of-range values are ignored
    */
+  /** Whether there is another screenshot to copy the appearance to. */
+  const canCopyAppearanceToAllScreenshots = screenshots.length > 1;
+
+  /**
+   * Gives every other screenshot the background, text colours and font of the
+   * active one.
+   */
+  const copyAppearanceToAllScreenshots = () => {
+    setScreenshots(copyAppearanceToAll(screenshots, activeScreenshotId));
+  };
+
   const moveScreenshot = (id: string, targetIndex: number) => {
     const fromIndex = screenshots.findIndex((s) => s.id === id);
     if (fromIndex === -1) return;
@@ -1311,6 +1325,8 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         handleElementMouseDown,
         handleElementMouseMove,
         handleElementMouseUp,
+        copyAppearanceToAllScreenshots,
+        canCopyAppearanceToAllScreenshots,
         canCenterSelectedElement,
         centerSelectedElementHorizontally,
         nudgeSelectedElement,

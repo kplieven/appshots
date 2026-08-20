@@ -40,6 +40,8 @@ export const RightSidebar = () => {
     subheadlineFontSize,
     setSubheadlineFontSize,
     setIsFontPickerOpen,
+    copyAppearanceToAllScreenshots,
+    canCopyAppearanceToAllScreenshots,
     fileInputRef,
     handleFileUpload,
     overlayImageInputRef,
@@ -116,6 +118,8 @@ export const RightSidebar = () => {
           gradientPresets={gradientPresets}
           onUpdateScreenshot={updateActiveScreenshot}
           onOpenFontPicker={() => setIsFontPickerOpen(true)}
+          canCopyToAll={canCopyAppearanceToAllScreenshots}
+          onCopyToAll={copyAppearanceToAllScreenshots}
         />
 
         <OverlayImagesSection
