@@ -4,7 +4,7 @@
  * Individual screenshot preview card with all interactive elements.
  */
 
-import type { RefObject } from "react";
+import { useState, type RefObject } from "react";
 import type { Screenshot, ExportSize, SelectedElement } from "../../types";
 import type { RenderableDevice } from "../../lib/device-overflow";
 import { RemoveButton } from "./RemoveButton";
@@ -12,8 +12,13 @@ import { OverlayImage } from "./OverlayImage";
 import { TextElement } from "./TextElement";
 import { DeviceContainer } from "./DeviceContainer";
 import { SnapGuide } from "./SnapGuide";
+import { ReorderControls } from "./ReorderControls";
 import { isElementSelected } from "./utils";
-import { Z_INDEX } from "./constants";
+import {
+  SCREENSHOT_DRAG_TYPE,
+  SELECTION_COLORS,
+  Z_INDEX,
+} from "./constants";
 
 interface ScreenshotCardProps {
   /** Screenshot data */
@@ -24,6 +29,10 @@ interface ScreenshotCardProps {
   isActive: boolean;
   /** Whether this screenshot can be removed */
   canRemove: boolean;
+  /** Position of this screenshot in the set */
+  index: number;
+  /** Total number of screenshots */
+  screenshotCount: number;
   /** Currently selected element */
   selectedElement: SelectedElement | null;
   /** Height of the alignment guide to draw, in percent, or null when not snapping */
@@ -42,6 +51,10 @@ interface ScreenshotCardProps {
   onSelect: () => void;
   /** Handler for removing this screenshot */
   onRemove: () => void;
+  /** Handler for moving this screenshot to another position */
+  onMove: (targetIndex: number) => void;
+  /** Handler for another screenshot being dropped on this position */
+  onDropAt: (draggedScreenshotId: string) => void;
   /** Handler for deselecting elements */
   onDeselect: () => void;
   /** Handler for element mouse down */
@@ -68,6 +81,8 @@ export const ScreenshotCard = ({
   renderableDevices,
   isActive,
   canRemove,
+  index,
+  screenshotCount,
   selectedElement,
   snapGuideY,
   exportSize,
@@ -77,10 +92,17 @@ export const ScreenshotCard = ({
   getBackgroundStyle,
   onSelect,
   onRemove,
+  onMove,
+  onDropAt,
   onDeselect,
   onElementMouseDown,
   onElementMouseUp,
 }: ScreenshotCardProps) => {
+  /** Whether a dragged screenshot is hovering over this card */
+  const [isDropTarget, setIsDropTarget] = useState(false);
+  /** Whether this card is the one being dragged */
+  const [isReordering, setIsReordering] = useState(false);
+
   // Split overlay images by layer
   const behindImages = screenshot.overlayImages.filter(
     (img) => img.layer === "behind",
@@ -88,6 +110,39 @@ export const ScreenshotCard = ({
   const frontImages = screenshot.overlayImages.filter(
     (img) => img.layer !== "behind",
   );
+
+  const isScreenshotDrag = (e: React.DragEvent) =>
+    e.dataTransfer.types.includes(SCREENSHOT_DRAG_TYPE);
+
+  const handleReorderDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData(SCREENSHOT_DRAG_TYPE, screenshot.id);
+    e.dataTransfer.effectAllowed = "move";
+    setIsReordering(true);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!isScreenshotDrag(e)) return;
+    // Marks this card as a valid drop target
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setIsDropTarget(true);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    if (!isScreenshotDrag(e)) return;
+    e.preventDefault();
+    setIsDropTarget(false);
+
+    const draggedId = e.dataTransfer.getData(SCREENSHOT_DRAG_TYPE);
+    if (draggedId && draggedId !== screenshot.id) onDropAt(draggedId);
+  };
+
+  // A dragged card fades out; the others keep the usual active/inactive look
+  const opacityClass = isReordering
+    ? "opacity-40"
+    : isActive
+      ? "opacity-100"
+      : "opacity-70 hover:opacity-100";
 
   // Handle background click to deselect
   const handleBackgroundMouseDown = (e: React.MouseEvent) => {
@@ -105,15 +160,18 @@ export const ScreenshotCard = ({
       onClick={onSelect}
       onMouseUp={onElementMouseUp}
       onMouseDown={handleBackgroundMouseDown}
-      className={`relative h-full rounded-xl overflow-hidden cursor-pointer transition-all ${
-        isActive ? "opacity-100" : "opacity-70 hover:opacity-100"
-      }`}
+      onDragOver={handleDragOver}
+      onDragLeave={() => setIsDropTarget(false)}
+      onDrop={handleDrop}
+      className={`relative h-full rounded-xl overflow-hidden cursor-pointer transition-all ${opacityClass}`}
       style={{
         background: getBackgroundStyle(screenshot),
         aspectRatio: `${exportSize.width}/${exportSize.height}`,
-        boxShadow: isActive
-          ? "inset 0 0 0 2px rgba(255, 255, 255, 0.95)"
-          : undefined,
+        boxShadow: isDropTarget
+          ? `inset 0 0 0 3px ${SELECTION_COLORS.outline}`
+          : isActive
+            ? "inset 0 0 0 2px rgba(255, 255, 255, 0.95)"
+            : undefined,
       }}
     >
       {/* Noise overlay */}
@@ -126,6 +184,17 @@ export const ScreenshotCard = ({
             opacity: screenshot.backgroundNoise / 100,
             mixBlendMode: "overlay",
           }}
+        />
+      )}
+
+      {/* Reorder controls */}
+      {screenshotCount > 1 && (
+        <ReorderControls
+          index={index}
+          screenshotCount={screenshotCount}
+          onMove={onMove}
+          onDragStart={handleReorderDragStart}
+          onDragEnd={() => setIsReordering(false)}
         />
       )}
 

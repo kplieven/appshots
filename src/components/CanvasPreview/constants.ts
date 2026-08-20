@@ -34,3 +34,8 @@ export const SELECTION_COLORS = {
  * Colour of the alignment guide shown while a text element snaps
  */
 export const SNAP_GUIDE_COLOR = "rgba(139, 92, 246, 0.9)";
+
+/**
+ * dataTransfer type carrying the id of a screenshot dragged to a new position
+ */
+export const SCREENSHOT_DRAG_TYPE = "application/x-appshots-screenshot";

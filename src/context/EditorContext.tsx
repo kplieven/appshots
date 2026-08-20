@@ -22,6 +22,7 @@ import { devices, exportSizes, gradientPresets } from "../constants";
 import { exportScreenshots } from "../lib/export-utils";
 import { getHorizontalCenterUpdates } from "../lib/center-element";
 import { resolveTextColors } from "../lib/text-colors";
+import { moveItem } from "../lib/reorder";
 import {
   collectTextCenterYTargets,
   findSnapCenterY,
@@ -108,6 +109,7 @@ interface EditorContextType {
   updateActiveScreenshot: (updates: Partial<Screenshot>) => void;
   addScreenshot: () => void;
   removeScreenshot: (id: string) => void;
+  moveScreenshot: (id: string, targetIndex: number) => void;
   handleElementMouseDown: (
     e: React.MouseEvent,
     type: "headline" | "subheadline" | "image" | "device",
@@ -1107,6 +1109,23 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  /**
+   * Moves a screenshot to another position in the set.
+   *
+   * @param id - Screenshot being moved
+   * @param targetIndex - Position it should end up at; out-of-range values are ignored
+   */
+  const moveScreenshot = (id: string, targetIndex: number) => {
+    const fromIndex = screenshots.findIndex((s) => s.id === id);
+    if (fromIndex === -1) return;
+
+    const reordered = moveItem(screenshots, fromIndex, targetIndex);
+    if (reordered === screenshots) return;
+
+    setScreenshots(reordered);
+    setActiveScreenshotId(id);
+  };
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -1230,6 +1249,7 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         updateActiveScreenshot,
         addScreenshot,
         removeScreenshot,
+        moveScreenshot,
         handleElementMouseDown,
         handleElementMouseMove,
         handleElementMouseUp,

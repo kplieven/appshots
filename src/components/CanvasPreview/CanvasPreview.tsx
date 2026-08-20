@@ -33,6 +33,7 @@ export const CanvasPreview = () => {
     setActiveScreenshotId,
     setSelectedElement,
     removeScreenshot,
+    moveScreenshot,
     handleElementMouseDown,
     handleElementMouseUp,
     getBackgroundStyle,
@@ -84,6 +85,8 @@ export const CanvasPreview = () => {
                 renderableDevices={renderableDevices}
                 isActive={activeScreenshotId === screenshot.id}
                 canRemove={screenshots.length > 1}
+                index={index}
+                screenshotCount={screenshots.length}
                 selectedElement={selectedElement}
                 snapGuideY={snapGuideY}
                 exportSize={exportSize}
@@ -98,6 +101,10 @@ export const CanvasPreview = () => {
                   }
                 }}
                 onRemove={() => removeScreenshot(screenshot.id)}
+                onMove={(targetIndex) =>
+                  moveScreenshot(screenshot.id, targetIndex)
+                }
+                onDropAt={(draggedId) => moveScreenshot(draggedId, index)}
                 onDeselect={() => setSelectedElement(null)}
                 onElementMouseDown={handleElementMouseDown}
                 onElementMouseUp={handleElementMouseUp}
