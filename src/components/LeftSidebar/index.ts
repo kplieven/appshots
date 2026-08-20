@@ -30,6 +30,7 @@ export { SelectionButton } from "./SelectionButton";
 export { ColorButton } from "./ColorButton";
 export { DeviceSection } from "./DeviceSection";
 export { ExportSection } from "./ExportSection";
+export { ProjectFileSection } from "./ProjectFileSection";
 
 // Constants
 export { STYLES } from "./constants";

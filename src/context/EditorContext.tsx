@@ -32,6 +32,14 @@ import {
   useEditorPersistence,
   clearPersistedState,
 } from "../lib/useLocalStorage";
+import {
+  downloadJson,
+  parseProjectFile,
+  projectFileName,
+  readFileAsText,
+  serializeProjects,
+  uniqueProjectName,
+} from "../lib/project-io";
 
 function generateId() {
   return Math.random().toString(36).substring(2, 9);
@@ -46,6 +54,9 @@ interface EditorContextType {
   renameProject: (id: string, name: string) => void;
   deleteProject: (id: string) => void;
   switchProject: (id: string) => void;
+  exportActiveProject: () => void;
+  exportAllProjects: () => void;
+  importProjectsFromFile: (file: File) => Promise<number>;
 
   // State
   isFontPickerOpen: boolean;
@@ -215,10 +226,23 @@ const normalizeProject = (project: Project): Project => {
     normalizeScreenshot(screenshot, fallbackDeviceId, fallbackColorId),
   );
 
+  const defaults = createDefaultProject(project.name);
+
   return {
     ...project,
     selectedDeviceId: fallbackDeviceId,
     selectedColorId: fallbackColorId,
+    exportSizeId:
+      exportSizes.find((s) => s.id === project.exportSizeId)?.id ??
+      defaults.exportSizeId,
+    headlineFontSize:
+      typeof project.headlineFontSize === "number"
+        ? project.headlineFontSize
+        : defaults.headlineFontSize,
+    subheadlineFontSize:
+      typeof project.subheadlineFontSize === "number"
+        ? project.subheadlineFontSize
+        : defaults.subheadlineFontSize,
     screenshots: normalizedScreenshots,
     activeScreenshotId:
       normalizedScreenshots.find((s) => s.id === project.activeScreenshotId)?.id ??
@@ -422,7 +446,8 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
   const createProject = (name: string) => {
     const newProject = createDefaultProject(name);
     setProjects((prev) => [...prev, newProject]);
-    switchProject(newProject.id);
+    // The new project isn't in `projects` yet, so activate it directly.
+    applyProjectState(newProject);
   };
 
   const renameProject = (id: string, name: string) => {
@@ -448,11 +473,14 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const switchProject = (id: string) => {
-    const project = projects.find((p) => p.id === id);
-    if (!project) return;
-
-    setActiveProjectId(id);
+  /**
+   * Loads a project's data into the live editor state.
+   *
+   * Takes the project itself rather than an id so it also works for projects
+   * that have just been created or imported and are not yet in `projects`.
+   */
+  const applyProjectState = (project: Project) => {
+    setActiveProjectId(project.id);
     setSelectedDeviceIdState(project.selectedDeviceId);
     setSelectedColorIdState(project.selectedColorId);
     setExportSizeIdState(project.exportSizeId);
@@ -461,6 +489,75 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
     setHeadlineFontSizeState(project.headlineFontSize);
     setSubheadlineFontSizeState(project.subheadlineFontSize);
     setSelectedElement(null);
+  };
+
+  const switchProject = (id: string) => {
+    const project = projects.find((p) => p.id === id);
+    if (!project) return;
+    applyProjectState(project);
+  };
+
+  /**
+   * Snapshots the active project from live editor state.
+   *
+   * The `projects` array only catches up with the editor one effect later, so
+   * exports read the live state to avoid writing a stale project to disk.
+   */
+  const getActiveProjectSnapshot = (): Project => ({
+    ...activeProject,
+    screenshots,
+    selectedDeviceId,
+    selectedColorId,
+    exportSizeId,
+    activeScreenshotId,
+    headlineFontSize,
+    subheadlineFontSize,
+  });
+
+  /**
+   * Downloads the active project as a JSON file.
+   */
+  const exportActiveProject = () => {
+    const project = getActiveProjectSnapshot();
+    downloadJson(projectFileName(project), serializeProjects([project]));
+  };
+
+  /**
+   * Downloads every project as a single JSON file.
+   */
+  const exportAllProjects = () => {
+    const snapshot = getActiveProjectSnapshot();
+    const allProjects = projects.map((p) =>
+      p.id === activeProjectId ? snapshot : p,
+    );
+    downloadJson("appshots-projects.json", serializeProjects(allProjects));
+  };
+
+  /**
+   * Imports projects from an uploaded JSON file.
+   *
+   * Imported projects are always added alongside existing ones — never merged
+   * into or overwriting them — and the editor switches to the first import.
+   *
+   * @param file - JSON file from a file input
+   * @returns Number of projects imported
+   * @throws {ProjectImportError} When the file isn't a valid project export
+   */
+  const importProjectsFromFile = async (file: File): Promise<number> => {
+    const text = await readFileAsText(file);
+    const imported = parseProjectFile(text, generateId).map(normalizeProject);
+
+    const takenNames = projects.map((p) => p.name);
+    const named = imported.map((project) => {
+      const name = uniqueProjectName(project.name, takenNames);
+      takenNames.push(name);
+      return { ...project, name };
+    });
+
+    setProjects((prev) => [...prev, ...named]);
+    applyProjectState(named[0]);
+
+    return named.length;
   };
 
   const selectedDevice =
@@ -1012,6 +1109,9 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         renameProject,
         deleteProject,
         switchProject,
+        exportActiveProject,
+        exportAllProjects,
+        importProjectsFromFile,
 
         isFontPickerOpen,
         setIsFontPickerOpen,

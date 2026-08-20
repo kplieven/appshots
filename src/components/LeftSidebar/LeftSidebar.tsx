@@ -5,6 +5,7 @@
  *
  * Features:
  * - Project management (create, switch, rename, delete)
+ * - Project import/export as JSON
  * - Device model selection
  * - Device color selection
  * - Export size selection
@@ -16,6 +17,7 @@ import { devices, exportSizes } from "../../constants";
 import { SidebarHeader } from "./SidebarHeader";
 import { DeviceSection } from "./DeviceSection";
 import { ExportSection } from "./ExportSection";
+import { ProjectFileSection } from "./ProjectFileSection";
 import { ProjectSwitcher } from "../ProjectSwitcher";
 import { STYLES } from "./constants";
 
@@ -39,6 +41,11 @@ export const LeftSidebar = () => {
     setExportSizeId,
     handleExport,
     screenshots,
+    projects,
+    activeProject,
+    exportActiveProject,
+    exportAllProjects,
+    importProjectsFromFile,
   } = useEditor();
 
   // Handle device selection with default color
@@ -72,6 +79,14 @@ export const LeftSidebar = () => {
           screenshotCount={screenshots.length}
           onSizeSelect={setExportSizeId}
           onExport={handleExport}
+        />
+
+        <ProjectFileSection
+          activeProjectName={activeProject.name}
+          projectCount={projects.length}
+          onExportProject={exportActiveProject}
+          onExportAll={exportAllProjects}
+          onImport={importProjectsFromFile}
         />
       </div>
     </aside>

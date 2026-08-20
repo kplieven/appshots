@@ -51,4 +51,17 @@ export const STYLES = {
   /** Primary action button */
   primaryButton:
     "w-full mt-3 bg-white hover:bg-neutral-200 text-black font-medium py-2.5 rounded-lg transition-colors",
+
+  /** Secondary action button */
+  secondaryButton:
+    "w-full flex items-center justify-center gap-2 bg-[#2a2a2a] hover:bg-[#333] text-gray-200 text-sm font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+
+  /** Helper text below a control */
+  helpText: "text-xs text-gray-500 mt-2",
+
+  /** Error message text */
+  errorText: "text-xs text-red-400 mt-2",
+
+  /** Success message text */
+  successText: "text-xs text-green-400 mt-2",
 } as const;

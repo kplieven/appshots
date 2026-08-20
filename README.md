@@ -63,6 +63,8 @@ A free, open-source tool to create stunning, high-converting screenshots for the
 
 - **Multiple projects** — create, rename, switch between, and delete projects
 - **Auto-save** — all projects and settings persist to localStorage across sessions
+- **Export projects to JSON** — download the current project (or all of them) as a portable `.json` backup
+- **Import projects from JSON** — upload a previously exported file to restore work or move it to another browser; imports are added as new projects and never overwrite existing ones
 - **Reset to defaults** — clear everything and start fresh
 
 ### 📦 Export
