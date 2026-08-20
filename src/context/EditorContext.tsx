@@ -20,6 +20,11 @@ import type {
 } from "../types";
 import { devices, exportSizes, gradientPresets } from "../constants";
 import { exportScreenshots } from "../lib/export-utils";
+import { getHorizontalCenterUpdates } from "../lib/center-element";
+import {
+  collectTextCenterYTargets,
+  findSnapCenterY,
+} from "../lib/snap-alignment";
 import {
   cloneDeviceInstance,
   createDeviceInstance,
@@ -108,6 +113,8 @@ interface EditorContextType {
   ) => void;
   handleElementMouseMove: (e: MouseEvent) => void;
   handleElementMouseUp: () => void;
+  canCenterSelectedElement: boolean;
+  centerSelectedElementHorizontally: () => void;
   addOverlayImage: (file: File) => void;
   removeOverlayImage: (imageId: string) => void;
   updateOverlayImageSize: (imageId: string, widthPercent: number) => void;
@@ -336,6 +343,10 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
   const dragContainerSize = useRef({ width: 0, height: 0 });
   const rafId = useRef<number | null>(null);
   const pendingUpdate = useRef<{ x: number; y: number } | null>(null);
+  /** Vertical centers of text boxes in other screenshots the drag can snap to, in percent. */
+  const snapCenterYTargets = useRef<number[]>([]);
+  /** Height of the dragged text element, in percent of the screenshot height. */
+  const dragElementHeightPercent = useRef(0);
 
   const overlayImageInputRef = useRef<HTMLInputElement>(null);
 
@@ -694,6 +705,21 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         dragStartElementPos.current = { x: image.x, y: image.y };
       }
     }
+
+    // Text elements snap vertically to the text boxes of the other screenshots
+    if (type === "headline" || type === "subheadline") {
+      const { height } = dragContainerSize.current;
+      const elementHeight = (
+        e.currentTarget as HTMLElement
+      ).getBoundingClientRect().height;
+
+      dragElementHeightPercent.current =
+        height > 0 ? (elementHeight / height) * 100 : 0;
+      snapCenterYTargets.current = collectTextCenterYTargets(screenshotId);
+    } else {
+      dragElementHeightPercent.current = 0;
+      snapCenterYTargets.current = [];
+    }
   };
 
   const applyDragUpdate = useCallback(() => {
@@ -752,7 +778,19 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
       const deltaY = ((e.clientY - dragStartPos.current.y) / height) * 100;
 
       const newX = dragStartElementPos.current.x + deltaX;
-      const newY = dragStartElementPos.current.y + deltaY;
+      let newY = dragStartElementPos.current.y + deltaY;
+
+      // Hold Alt to drag freely past the alignment guides
+      if (!e.altKey && snapCenterYTargets.current.length > 0) {
+        const halfHeight = dragElementHeightPercent.current / 2;
+        const snappedCenterY = findSnapCenterY(
+          newY + halfHeight,
+          snapCenterYTargets.current,
+        );
+        if (snappedCenterY !== null) {
+          newY = snappedCenterY - halfHeight;
+        }
+      }
 
       pendingUpdate.current = { x: newX, y: newY };
 
@@ -785,6 +823,30 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
       window.removeEventListener("mouseup", handleElementMouseUp);
     };
   }, [isDragging, handleElementMouseMove, handleElementMouseUp]);
+
+  const selectedElementScreenshot = selectedElement
+    ? (screenshots.find(
+        (screenshot) => screenshot.id === selectedElement.screenshotId,
+      ) ?? null)
+    : null;
+
+  const canCenterSelectedElement =
+    selectedElementScreenshot !== null &&
+    getHorizontalCenterUpdates(selectedElementScreenshot, selectedElement) !==
+      null;
+
+  /** Moves the selected element to the horizontal center of its screenshot. */
+  const centerSelectedElementHorizontally = () => {
+    if (!selectedElement || !selectedElementScreenshot) return;
+
+    const updates = getHorizontalCenterUpdates(
+      selectedElementScreenshot,
+      selectedElement,
+    );
+    if (!updates) return;
+
+    updateScreenshotById(selectedElement.screenshotId, updates);
+  };
 
   const addOverlayImage = (file: File) => {
     const reader = new FileReader();
@@ -1151,6 +1213,8 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
         handleElementMouseDown,
         handleElementMouseMove,
         handleElementMouseUp,
+        canCenterSelectedElement,
+        centerSelectedElementHorizontally,
         addOverlayImage,
         removeOverlayImage,
         updateOverlayImageSize,

@@ -44,6 +44,8 @@ export const CanvasPreview = () => {
     subheadlineFontSize,
     setPreviewDimensions,
     exportSize,
+    canCenterSelectedElement,
+    centerSelectedElementHorizontally,
   } = useEditor();
 
   // Track preview dimensions for export scaling
@@ -58,6 +60,8 @@ export const CanvasPreview = () => {
       <Toolbar
         onAddScreenshot={addScreenshot}
         screenshotCount={screenshots.length}
+        canCenterSelectedElement={canCenterSelectedElement}
+        onCenterSelectedElement={centerSelectedElementHorizontally}
       />
 
       {/* Preview area with horizontal scroll */}

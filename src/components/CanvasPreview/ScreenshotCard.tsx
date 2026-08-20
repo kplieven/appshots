@@ -97,6 +97,7 @@ export const ScreenshotCard = ({
     <div
       ref={isActive ? previewRef : undefined}
       data-screenshot-card="true"
+      data-screenshot-id={screenshot.id}
       onClick={onSelect}
       onMouseUp={onElementMouseUp}
       onMouseDown={handleBackgroundMouseDown}
